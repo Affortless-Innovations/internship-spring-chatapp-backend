@@ -30,12 +30,18 @@ public class MessageApplicationController
 		msgService.registerMessage(msg);
 		
 		template.convertAndSend("/topic/messages/" + message.getReceiverId(), message);
+		template.convertAndSend("/topic/messages/" + message.getSenderId(), message);
 		
+		System.out.println("Received message from " + message.getSenderId() + " to " + message.getReceiverId());
 		if(!msgService.isUserActive(message.getReceiverId(), message.getSenderId()))
 		{
 			msgService.addUnread(message.getReceiverId(), message.getSenderId());
 			
 			template.convertAndSend("/topic/notifications/" + message.getReceiverId(),message);
 		}
+		
+		
+		System.out.println("Saving message: " + msg);
+
 	}
 }

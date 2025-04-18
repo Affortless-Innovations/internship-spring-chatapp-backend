@@ -24,16 +24,15 @@ public class RealTimeMessageServiceImpl implements IRealTimeMessageService
 	@Override
 	public void registerMessage(RealTimeMessage msg) 
 	{
-		messageRepo.save(msg);
+		System.out.println("Message saved: " + messageRepo.save(msg));
 	}
 
 	@Override
 	public List<RealTimeMessage> retieveMessages(String user1, String user2) 
 	{
-		return messageRepo.
-		findBySenderIdAndReceiverIdOrReceiverIdAndSenderIdOrderByCreationTimeAsc(user1, user2, user1, user2);
-	}
-
+		return messageRepo.getChatHistoryBetweenUsers(user1, user2);
+		
+	}			
 	@Override
 	public void addUnread(String receiverId, String senderId) 
 	{
