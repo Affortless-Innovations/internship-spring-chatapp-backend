@@ -32,26 +32,39 @@
     let unreadSet = new Set();
 
     function connect() {
-      const socket = new SockJS("http://localhost:4749/chat");
+      const socket = new SockJS("http://localhost:4743/chat");
       stompClient = Stomp.over(socket);
 
       stompClient.connect({}, () => {
-        stompClient.subscribe(`/topic/messages/${userId}`, (msg) => {
+        stompClient.subscribe(`/topic/${userId}`, (msg) => {
           const message = JSON.parse(msg.body);
           const { senderId, content } = message;
 
           if (senderId === activeChatWith) {
             document.getElementById("chatBox").value += `\n${senderId}: ${content}`;
+            markAsRead(userId,senderId);
+            if (unreadSet.has(senderId)) 
+            {
+                unreadSet.delete(senderId);
+                updateNotificationList();
+            }
           } else {
-            unreadSet.add(senderId);
-            updateNotificationList();
+        	  if(senderId!=userId)
+        		{
+            		unreadSet.add(senderId);
+            		updateNotificationList();
+        		}
           }
         });
 
-        stompClient.subscribe(`/topic/notifications/${userId}`, (msg) => {
-          const senderId = msg.body;
-          unreadSet.add(senderId);
-          updateNotificationList();
+        stompClient.subscribe(`/queue/${userId}`, (msg) => {
+          const message = JSON.parse(msg.body);	
+          const senderId = JSON.parse(msg.body).senderId;
+          if(senderId!=userId)
+        	  {
+          		unreadSet.add(senderId);
+         		 updateNotificationList();
+        	  }
         });
       });
     }
@@ -72,12 +85,15 @@
       activeChatWith = document.getElementById("receiver").value.trim();
       document.getElementById("chatBox").value = "";
 
-      fetch(`/read?receiver=${activeChatWith}&sender=${userId}`, {
+      fetch(`/active?receiver=${activeChatWith}&sender=${userId}`, {
         method: "POST"
       });
-
-      unreadSet.delete(activeChatWith);
-      updateNotificationList();
+	  if(unreadSet.has(activeChatWith))
+		  {
+		  	markAsRead(userId,activeChatWith);
+		  	unreadSet.delete(activeChatWith);
+	      	updateNotificationList();
+		  }
 
       fetch(`/messages?user1=${userId}&user2=${activeChatWith}`)
         .then(res => res.json())
@@ -88,6 +104,12 @@
           });
         });
     }
+    
+    function markAsRead(receiverId,senderId)
+    {
+    	fetch(`/read?receiver=${receiverId}&sender=${senderId}`, { method: "POST" });
+    }
+    
 
     function updateNotificationList() {
       const ul = document.getElementById("notifications");
